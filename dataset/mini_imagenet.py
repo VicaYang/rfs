@@ -48,13 +48,14 @@ class ImageNet(Dataset):
             data = pickle.load(f, encoding='latin1')
             self.imgs = data['data']
             self.labels = data['labels']
+            label2ord = {x:i for i,x in enumerate(set(self.labels))}
+            self.labels = [label2ord[label] for label in self.labels]
 
         # pre-process for contrastive sampling
         self.k = k
         self.is_sample = is_sample
         if self.is_sample:
             self.labels = np.asarray(self.labels)
-            self.labels = self.labels - np.min(self.labels)
             num_classes = np.max(self.labels) + 1
 
             self.cls_positive = [[] for _ in range(num_classes)]
@@ -76,7 +77,7 @@ class ImageNet(Dataset):
     def __getitem__(self, item):
         img = np.asarray(self.imgs[item]).astype('uint8')
         img = self.transform(img)
-        target = self.labels[item] - min(self.labels)
+        target = self.labels[item]
 
         if not self.is_sample:
             return img, target, item

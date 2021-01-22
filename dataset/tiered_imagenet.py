@@ -53,14 +53,13 @@ class TieredImageNet(Dataset):
         image_file = os.path.join(self.data_root, self.image_file_pattern % partition)
         self.imgs = np.load(image_file)['images']
         label_file = os.path.join(self.data_root, self.label_file_pattern % partition)
-        self.labels = self._load_labels(label_file)['labels']
+        self.labels = self._load_labels(label_file)
 
         # pre-process for contrastive sampling
         self.k = k
         self.is_sample = is_sample
         if self.is_sample:
             self.labels = np.asarray(self.labels)
-            self.labels = self.labels - np.min(self.labels)
             num_classes = np.max(self.labels) + 1
 
             self.cls_positive = [[] for _ in range(num_classes)]
@@ -82,7 +81,7 @@ class TieredImageNet(Dataset):
     def __getitem__(self, item):
         img = np.asarray(self.imgs[item]).astype('uint8')
         img = self.transform(img)
-        target = self.labels[item] - min(self.labels)
+        target = self.labels[item]
 
         if not self.is_sample:
             return img, target, item
@@ -101,13 +100,16 @@ class TieredImageNet(Dataset):
         try:
             with open(file, 'rb') as fo:
                 data = pickle.load(fo)
-            return data
+            
         except:
             with open(file, 'rb') as f:
                 u = pickle._Unpickler(f)
                 u.encoding = 'latin1'
                 data = u.load()
-            return data
+        labels = data['labels']
+        label2ord = {x:i for i,x in enumerate(set(labels))}
+        ords = [label2ord[label] for label in labels]
+        return ords
 
 
 class MetaTieredImageNet(TieredImageNet):

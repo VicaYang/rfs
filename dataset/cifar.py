@@ -54,23 +54,14 @@ class CIFAR100(Dataset):
             self.imgs = data['data']
             labels = data['labels']
             # adjust sparse labels to labels from 0 to n.
-            cur_class = 0
-            label2label = {}
-            for idx, label in enumerate(labels):
-                if label not in label2label:
-                    label2label[label] = cur_class
-                    cur_class += 1
-            new_labels = []
-            for idx, label in enumerate(labels):
-                new_labels.append(label2label[label])
-            self.labels = new_labels
+            label2ord = {x:i for i,x in enumerate(set(labels))}
+            self.labels = [label2ord[label] for label in labels]
 
         # pre-process for contrastive sampling
         self.k = k
         self.is_sample = is_sample
         if self.is_sample:
             self.labels = np.asarray(self.labels)
-            self.labels = self.labels - np.min(self.labels)
             num_classes = np.max(self.labels) + 1
 
             self.cls_positive = [[] for _ in range(num_classes)]
@@ -92,7 +83,7 @@ class CIFAR100(Dataset):
     def __getitem__(self, item):
         img = np.asarray(self.imgs[item]).astype('uint8')
         img = self.transform(img)
-        target = self.labels[item] - min(self.labels)
+        target = self.labels[item]
 
         if not self.is_sample:
             return img, target, item
